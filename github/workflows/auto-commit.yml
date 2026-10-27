@@ -3,7 +3,7 @@ name: Auto Commit
 on:
   schedule:
     - cron: "0 17 * * *"   # every day at 10:30 PM IST
-  workflow_dispatch:        # lets you press "Run workflow" manually
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -22,14 +22,12 @@ jobs:
           COUNT=$(( (RANDOM % 15) + 1 ))
           echo "Making $COUNT commits"
 
-          # time window: from 00:00 UTC today until now
           TODAY=$(date -u +%F)
           START=$(date -u -d "$TODAY 00:00:00" +%s)
           NOW=$(date -u +%s)
           RANGE=$(( NOW - START ))
           if [ $RANGE -lt 60 ]; then RANGE=60; fi
 
-          # pick random times and sort them oldest to newest
           TIMES=$(for i in $(seq 1 $COUNT); do
             echo $(( START + (RANDOM * 32768 + RANDOM) % RANGE ))
           done | sort -n)
