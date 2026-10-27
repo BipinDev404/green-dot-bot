@@ -1,0 +1,37 @@
+name: Auto Commit
+
+on:
+  schedule:
+    - cron: "30 4 * * *"   # every day at 10:00 AM IST
+  workflow_dispatch:        # lets you press "Run workflow" manually
+
+permissions:
+  contents: write
+
+jobs:
+  commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get my GitHub ID
+        id: me
+        run: |
+          ID=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/users/bipindev404 | jq -r .id)
+          echo "id=$ID" >> "$GITHUB_OUTPUT"
+
+      - name: Make random commits (1 to 15)
+        run: |
+          git config user.name "bipindev404"
+          git config user.email "${{ steps.me.outputs.id }}+bipindev404@users.noreply.github.com"
+
+          COUNT=$(( (RANDOM % 15) + 1 ))
+          echo "Making $COUNT commits"
+
+          for i in $(seq 1 $COUNT); do
+            echo "Update $i at $(date -u '+%Y-%m-%d %H:%M:%S UTC')" > activity.txt
+            git add activity.txt
+            git commit -m "Auto update $(date -u '+%F') #$i"
+          done
+
+          git push
