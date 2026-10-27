@@ -1,0 +1,31 @@
+name: Auto Commit
+
+on:
+  schedule:
+    - cron: "30 4 * * *"   # once daily, 10:00 AM IST
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Random commits (1 to 15)
+        run: |
+          git config user.name "YOUR_GITHUB_USERNAME"
+          git config user.email "YOUR_ID+YOUR_GITHUB_USERNAME@users.noreply.github.com"
+
+          COUNT=$(( (RANDOM % 15) + 1 ))
+          echo "Making $COUNT commits"
+
+          for i in $(seq 1 $COUNT); do
+            echo "Update $i at $(date -u '+%Y-%m-%d %H:%M:%S UTC')" > activity.txt
+            git add activity.txt
+            git commit -m "Auto update $(date -u '+%F') #$i"
+          done
+
+          git push
