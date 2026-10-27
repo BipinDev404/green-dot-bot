@@ -2,7 +2,7 @@ name: Auto Commit
 
 on:
   schedule:
-    - cron: "30 4 * * *"   # every day at 10:00 AM IST
+    - cron: "0 17 * * *"   # every day at 10:30 PM IST
   workflow_dispatch:        # lets you press "Run workflow" manually
 
 permissions:
@@ -12,26 +12,36 @@ jobs:
   commit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - name: Get my GitHub ID
-        id: me
-        run: |
-          ID=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/users/bipindev404 | jq -r .id)
-          echo "id=$ID" >> "$GITHUB_OUTPUT"
-
-      - name: Make random commits (1 to 15)
+      - name: Make random commits at random times
         run: |
           git config user.name "bipindev404"
-          git config user.email "${{ steps.me.outputs.id }}+bipindev404@users.noreply.github.com"
+          git config user.email "bipinfordev@gmail.com"
 
           COUNT=$(( (RANDOM % 15) + 1 ))
           echo "Making $COUNT commits"
 
-          for i in $(seq 1 $COUNT); do
-            echo "Update $i at $(date -u '+%Y-%m-%d %H:%M:%S UTC')" > activity.txt
+          # time window: from 00:00 UTC today until now
+          TODAY=$(date -u +%F)
+          START=$(date -u -d "$TODAY 00:00:00" +%s)
+          NOW=$(date -u +%s)
+          RANGE=$(( NOW - START ))
+          if [ $RANGE -lt 60 ]; then RANGE=60; fi
+
+          # pick random times and sort them oldest to newest
+          TIMES=$(for i in $(seq 1 $COUNT); do
+            echo $(( START + (RANDOM * 32768 + RANDOM) % RANGE ))
+          done | sort -n)
+
+          i=0
+          for TS in $TIMES; do
+            i=$((i+1))
+            D=$(date -u -d "@$TS" '+%Y-%m-%dT%H:%M:%S')
+            echo "Update $i at $D UTC" > activity.txt
             git add activity.txt
-            git commit -m "Auto update $(date -u '+%F') #$i"
+            GIT_AUTHOR_DATE="$D+0000" GIT_COMMITTER_DATE="$D+0000" \
+              git commit -m "Auto update $D"
           done
 
           git push
